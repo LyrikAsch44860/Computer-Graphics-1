@@ -40,16 +40,18 @@ ApplicationSolar::~ApplicationSolar() {
   glDeleteVertexArrays(1, &planet_object.vertex_AO);
 }
 
-void ApplicationSolar::render(node* currentNode, glm::fmat4 ModelMatrix, glm::fmat4 translationMatrix, float angle) const {
+void ApplicationSolar::render(node* currentNode, float angle) const {
   std::vector<node*> childList = currentNode->getChildrenList();
 
   // bind shader to upload uniforms
 
   glUseProgram(m_shaders.at("planet").handle);
 
-  ModelMatrix = glm::rotate(currentNode->getParent()->getWorldTransform(), float(currentNode->getLocalTransform()[3][2] * 0.3 * angle), glm::fvec3{0.0f, 1.0f, 0.0f});
-  ModelMatrix = ModelMatrix * currentNode->getLocalTransform();
-  ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+  //glm::mat4 ModelMatrix = glm::rotate(currentNode->getParent()->getWorldTransform(), float(angle), glm::fvec3{0.0f, 1.0f, 0.0f});
+
+  glm::fmat4 ModelMatrix = currentNode->getParent()->getWorldTransform() * glm::fmat4{ {cos(angle), 0, -1 * sin(angle),0}, {0,1,0,0}, { sin(angle), 0, cos(angle),0}, {0,0,0,1} } * currentNode->getLocalTransform();
+  std::cout << " Matrix with mult: " << glm::to_string(ModelMatrix) << "\n";
+  //ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
   currentNode->setWorldTransform(ModelMatrix);
 
   //ModelMatrix = glm::rotate(ModelMatrix, float(currentNode->getLocalTransform()[3][2] * 0.3 * angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
@@ -72,7 +74,7 @@ void ApplicationSolar::render(node* currentNode, glm::fmat4 ModelMatrix, glm::fm
 
 
   for (int i = 0; i < childList.size(); ++i) {
-    ApplicationSolar::render(childList[i], ModelMatrix, translationMatrix, angle);
+    ApplicationSolar::render(childList[i], angle);
   }
   return;
 }

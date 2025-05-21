@@ -22,7 +22,7 @@ class ApplicationSolar : public Application {
   void resizeCallback(unsigned width, unsigned height);
 
   // draw all objects
-  void render(node* currentNode, glm::fmat4 rotationMatrix, glm::fmat4 translationMatrix, float angle) const;
+  void render(node* currentNode, float angle) const;
 
  protected:
   void initializeShaderPrograms();
