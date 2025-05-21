@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+//class for nodes in the scene graph
+
 class node
 {
 public:
@@ -16,7 +18,7 @@ public:
 	std::vector<node*> getChildrenList();
 	std::string getName();
 	std::string getPath();
-	int getDepth(int* i, int* j);
+	int getDepth();
 	glm::fmat4 getLocalTransform();
 	void setLocalTransform(glm::fmat4);
 	glm::fmat4 getWorldTransform();

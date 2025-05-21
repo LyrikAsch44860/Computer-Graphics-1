@@ -1,10 +1,15 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include <node.hpp>
+//#include <node.hpp>
+#include "point_light_node.hpp"
+#include "geometry_node.hpp"
+#include "scene_graph.hpp"
+#include "camera_node.hpp"
 #include "structs.hpp"
 #include <glm/gtc/type_precision.hpp>
 #include <map>
+
 
 
 struct GLFWwindow;
@@ -73,11 +78,19 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     // enable depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    
+
     std::vector<node*> root_children = {};
-    glm::mat4;
+
+    // builds the scene graph with one root node, one camera node, one pointLightNode and 9 geometry nodes
+    // geometry nodes have a translation matrix multiplied by a rotation matrix as their local Transform
+    // rotation is only an offset 
 
     node root = { nullptr, root_children, "root", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
+
+    sceneGraph graph = { "Scene Graph" , &root };
+
+    cameraNode camera = { nullptr, root_children, "camera", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, true, true, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
+    root.addChildren(&camera);
 
     pointLightNode sun_1 = { nullptr, root_children, "sun", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3{1, 1, 0.8}, 1 };
     root.addChildren(&sun_1);
@@ -89,7 +102,6 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     sun_1.addChildren(&planet_2);
 
     geometryNode planet_3 = { nullptr, root_children, "super-earth", "no_clue", 0, glm::fmat4{{cos(170), 0, -1 * sin(170),0}, {0,1,0,0}, {sin(170),0, cos(170),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-6,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
-    sun_1.addChildren(&planet_3);
 
     geometryNode planet_4 = { nullptr, root_children, "mars", "no_clue", 0, glm::fmat4{{cos(50), 0, -1 * sin(50),0}, {0,1,0,0}, { sin(50), 0, cos(50),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-8,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
     sun_1.addChildren(&planet_4);
@@ -107,8 +119,19 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     sun_1.addChildren(&planet_8);
 
     geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    
+    /*
     planet_3.addChildren(&moon_1);
 
+    std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
+    std::cout << "moon path: " << moon_1.getPath() << "\n";
+    
+    sun_1.addChildren(&planet_3);
+
+
+    std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
+    std::cout << "moon path: " << moon_1.getPath() << "\n";
+    */
 
     // rendering loop
     while (!glfwWindowShouldClose(window)) {
@@ -117,7 +140,10 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
       // clear buffer
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       // draw geometry
+      // angle is used for rotation, same angle for all so they rotate at the same speed
       double angle = glfwGetTime();
+      //render get a node to start and an angle for rotation
+      // I started at sun because it is the center for the actual scene
       application->render(&sun_1, angle);
       // swap draw buffer to front
       glfwSwapBuffers(window);

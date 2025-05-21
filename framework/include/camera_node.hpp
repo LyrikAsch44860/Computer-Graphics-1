@@ -3,6 +3,7 @@
 #define CAMERA_NODE_HPP
 #include "node.hpp"
 
+// class for camera node is not in use other than being an element in scene graph
 class cameraNode : public node
 {
 	public:

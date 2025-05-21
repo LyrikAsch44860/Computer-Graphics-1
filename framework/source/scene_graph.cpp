@@ -3,6 +3,8 @@
 		sceneGraph::sceneGraph(std::string name, node* root) : name { name }, root{ root } {
 		}
 
+		// just some getters and setters
+
 		sceneGraph::~sceneGraph() {}
 
 		node* sceneGraph::getRoot() {

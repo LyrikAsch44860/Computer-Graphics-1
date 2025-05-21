@@ -3,6 +3,8 @@
 #define SCENE_GRAPH_HPP
 #include "node.hpp"
 
+// class to represent the scene graph but its not used to render anything right now
+
 class sceneGraph
 {
 	public:

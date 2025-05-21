@@ -3,6 +3,8 @@
 #define POINT_LIGHT_NODE_HPP
 #include "node.hpp"
 
+// class to represent a point light but i havent figured out how to do lighting so its used as a normal node
+
 class pointLightNode : public node
 {
 public:

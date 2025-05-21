@@ -4,7 +4,7 @@
 #include "application.hpp"
 #include "model.hpp"
 #include "structs.hpp"
-#include "node.hpp"
+
 
 // gpu representation of model
 class ApplicationSolar : public Application {
@@ -22,6 +22,7 @@ class ApplicationSolar : public Application {
   void resizeCallback(unsigned width, unsigned height);
 
   // draw all objects
+  // added a node and an angle to draw all nodes with their parents transformation and to make them rotate around them at equal speed
   void render(node* currentNode, float angle) const;
 
  protected:
@@ -41,6 +42,8 @@ class ApplicationSolar : public Application {
   glm::fmat4 m_view_transform;
   // camera projection matrix
   glm::fmat4 m_view_projection;
+  glm::fmat4 lastView;
+
 };
 
 #endif

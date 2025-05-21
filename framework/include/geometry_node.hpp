@@ -4,6 +4,7 @@
 #include "node.hpp"
 #include "model.hpp"
 
+// class used to draw planets even though model is not used
 class geometryNode : public node
 {
 	public:

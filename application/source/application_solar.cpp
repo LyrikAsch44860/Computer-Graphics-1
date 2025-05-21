@@ -4,9 +4,6 @@
 #include "utils.hpp"
 #include "shader_loader.hpp"
 #include "model_loader.hpp"
-#include "node.hpp"
-#include "point_light_node.hpp"
-#include "geometry_node.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include "cmath"
 
@@ -29,6 +26,7 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path)
  ,planet_object{}
  ,m_view_transform{glm::translate(glm::fmat4{}, glm::fvec3{0.0f, 0.0f, 10.0f})}
  ,m_view_projection{utils::calculate_projection_matrix(initial_aspect_ratio)}
+  , lastView{}
 {
   initializeGeometry();
   initializeShaderPrograms();
@@ -42,21 +40,16 @@ ApplicationSolar::~ApplicationSolar() {
 
 void ApplicationSolar::render(node* currentNode, float angle) const {
   std::vector<node*> childList = currentNode->getChildrenList();
-
   // bind shader to upload uniforms
 
   glUseProgram(m_shaders.at("planet").handle);
 
-  //glm::mat4 ModelMatrix = glm::rotate(currentNode->getParent()->getWorldTransform(), float(angle), glm::fvec3{0.0f, 1.0f, 0.0f});
-
+  // get world transform from parent and add own local transform to it
+  // unnamed matrix is used to rotatet the children around the parent based on the time
   glm::fmat4 ModelMatrix = currentNode->getParent()->getWorldTransform() * glm::fmat4{ {cos(angle), 0, -1 * sin(angle),0}, {0,1,0,0}, { sin(angle), 0, cos(angle),0}, {0,0,0,1} } * currentNode->getLocalTransform();
-  std::cout << " Matrix with mult: " << glm::to_string(ModelMatrix) << "\n";
-  //ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+ 
+  // update own world transform to give it to children
   currentNode->setWorldTransform(ModelMatrix);
-
-  //ModelMatrix = glm::rotate(ModelMatrix, float(currentNode->getLocalTransform()[3][2] * 0.3 * angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
-  //ModelMatrix = ModelMatrix * currentNode->getLocalTransform();
-  //ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 
   glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
     1, GL_FALSE, glm::value_ptr(ModelMatrix));
@@ -72,7 +65,7 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   // draw bound vertex array using bound shader
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
 
-
+  //call the shader function for all children
   for (int i = 0; i < childList.size(); ++i) {
     ApplicationSolar::render(childList[i], angle);
   }
@@ -155,11 +148,33 @@ void ApplicationSolar::initializeGeometry() {
 
 ///////////////////////////// callback functions for window events ////////////
 // handle key input
+// added movment for key A, D, Space and Ctrl for rigth, left, up and down
 void ApplicationSolar::keyCallback(int key, int action, int mods) {
   if (key == GLFW_KEY_W  && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{0.0f, 0.0f, -0.1f});
     uploadView();
   }
+
+  else if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    m_view_transform = glm::translate(m_view_transform, glm::fvec3{ -0.1f, 0.0f, 0.0f });
+    uploadView();
+  }
+
+  else if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    m_view_transform = glm::translate(m_view_transform, glm::fvec3{ 0.1f, 0.0f, 0.0f });
+    uploadView();
+  }
+
+  else if (key == GLFW_KEY_SPACE && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    m_view_transform = glm::translate(m_view_transform, glm::fvec3{ 0.0f, 0.1f, 0.0f });
+    uploadView();
+  }
+
+  else if (key == GLFW_KEY_LEFT_CONTROL && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    m_view_transform = glm::translate(m_view_transform, glm::fvec3{ 0.0f, -0.1f, 0.0f });
+    uploadView();
+  }
+
   else if (key == GLFW_KEY_S  && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{0.0f, 0.0f, 0.1f});
     uploadView();
@@ -169,6 +184,14 @@ void ApplicationSolar::keyCallback(int key, int action, int mods) {
 //handle delta mouse movement input
 void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
   // mouse handling
+  // transform the view based on the mouse movement at the y achis
+  // when used first rotates your camera a lot due to the potentially large x and y positions
+  // bad handeling when using both y and x achsis
+
+    //m_view_projection = glm::rotate(m_view_projection, float(0.004 * pos_x ), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+    m_view_projection = glm::rotate(m_view_projection, float(0.004 * pos_y), glm::fvec3{ 1.0f, 0.0f, 0.0f });
+    uploadProjection();
+  
 }
 
 //handle resizing
@@ -182,18 +205,6 @@ void ApplicationSolar::resizeCallback(unsigned width, unsigned height) {
 
 // exe entry point
 int main(int argc, char* argv[]) {
-
-  glm::fmat4 Model = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1} };
-  glm::fmat4 Model1 = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1} };
-  glm::fmat4 Translate = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {1,1,1,1} };
-  glm::fmat4 Rotate = { {cos(60), 0, -1 * sin(60),0}, {0,1,0,0}, { sin(60), 0, cos(60),0}, {0,0,0,1} };
-
-  Model1 = glm::rotate(Model1, float(60.0), glm::fvec3{ 0.0f, 1.0f, 0.0f });
-  Model1 = glm::translate(Model1, glm::fvec3{ 1.0f, 1.0f, 1.0f });
-  Model = Translate * Model;
-  Model = Rotate * Model;
-  std::cout << " Matrix with mult: " << glm::to_string(Model) << "\n";
-  std::cout << " Matrix with function: " << glm::to_string(Model1) << "\n";
 
   Application::run<ApplicationSolar>(argc, argv, 3, 2);
 }
