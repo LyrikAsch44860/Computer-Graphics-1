@@ -119,9 +119,19 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     sun_1.addChildren(&planet_8);
 
     geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    
+    
     planet_3.addChildren(&moon_1);
+
+    std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
+    std::cout << "moon path: " << moon_1.getPath() << "\n";
+    
     sun_1.addChildren(&planet_3);
 
+
+    std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
+    std::cout << "moon path: " << moon_1.getPath() << "\n";
+    
 
     // rendering loop
     while (!glfwWindowShouldClose(window)) {
