@@ -7,6 +7,8 @@
 #include "node.hpp"
 #include "point_light_node.hpp"
 #include "geometry_node.hpp"
+#include <glm/gtx/string_cast.hpp>
+#include "cmath"
 
 #include <glbinding/gl/gl.h>
 // use gl definitions from glbinding 
@@ -38,59 +40,29 @@ ApplicationSolar::~ApplicationSolar() {
   glDeleteVertexArrays(1, &planet_object.vertex_AO);
 }
 
-/*
-void renderGraph(node currentNode, glm::fmat4 rotationMatrix) {
-
-
-  glUseProgram(m_shaders.at("planet").handle);
-
-  double angle = glfwGetTime();
-
-  glm::fmat4 model_matrix = glm::rotate(glm::fmat4{}, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
-  model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f });
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-    1, GL_FALSE, glm::value_ptr(model_matrix));
-
-  // extra matrix for normal transformation to keep them orthogonal to surface
-  glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
-    1, GL_FALSE, glm::value_ptr(normal_matrix));
-
-  // bind the VAO to draw
-  glBindVertexArray(planet_object.vertex_AO);
-
-  // draw bound vertex array using bound shader
-  glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
-
-
-  std::vector<node*>* childList = currentNode.getChildrenList();
-  for (int i = 0; i < childList->size(); ++i) {
-
-  }
-  return;
-}
-*/
 void ApplicationSolar::render(node* currentNode, glm::fmat4 ModelMatrix, glm::fmat4 translationMatrix, float angle) const {
   std::vector<node*> childList = currentNode->getChildrenList();
-  
-  // My Solar System
 
-  //node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::fmat4 localTransform, glm::fmat4 worldTransform
   // bind shader to upload uniforms
 
   glUseProgram(m_shaders.at("planet").handle);
-  std::cout << "name: " << currentNode->getName() << " child size: " << childList.size() << " angle: " << angle << "\n";
-  ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f});
-  //ModelMatrix = glm::translate(ModelMatrix, glm::fvec3{ 0.0f, 0.0f, currentNode->getLocalTransform()[3][2] });
-  ModelMatrix = currentNode->getLocalTransform() * ModelMatrix;
-  //rotationMatrix = currentNode->getLocalTransform() * rotationMatrix;
+
+  ModelMatrix = glm::rotate(currentNode->getParent()->getWorldTransform(), float(currentNode->getLocalTransform()[3][2] * 0.3 * angle), glm::fvec3{0.0f, 1.0f, 0.0f});
+  ModelMatrix = ModelMatrix * currentNode->getLocalTransform();
+  ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+  currentNode->setWorldTransform(ModelMatrix);
+
+  //ModelMatrix = glm::rotate(ModelMatrix, float(currentNode->getLocalTransform()[3][2] * 0.3 * angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+  //ModelMatrix = ModelMatrix * currentNode->getLocalTransform();
+  //ModelMatrix = glm::rotate(ModelMatrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+
   glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-                     1, GL_FALSE, glm::value_ptr(ModelMatrix));
+    1, GL_FALSE, glm::value_ptr(ModelMatrix));
 
   // extra matrix for normal transformation to keep them orthogonal to surface
   glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * ModelMatrix);
   glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
-                     1, GL_FALSE, glm::value_ptr(normal_matrix));
+    1, GL_FALSE, glm::value_ptr(normal_matrix));
 
   // bind the VAO to draw
   glBindVertexArray(planet_object.vertex_AO);
@@ -98,47 +70,11 @@ void ApplicationSolar::render(node* currentNode, glm::fmat4 ModelMatrix, glm::fm
   // draw bound vertex array using bound shader
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
 
-  
-    for (int i = 0; i < childList.size(); ++i) {
-      ApplicationSolar::render(childList[i], ModelMatrix, translationMatrix, angle);
-    }
+
+  for (int i = 0; i < childList.size(); ++i) {
+    ApplicationSolar::render(childList[i], ModelMatrix, translationMatrix, angle);
+  }
   return;
-
- /*/////////////////////////////////////////////////////////////////////////////
-
-  model_matrix = glm::rotate(model_matrix, float(angle), glm::fvec3{ 0.0f, 1.0f, 0.0f });
-  
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-    1, GL_FALSE, glm::value_ptr(model_matrix));
-
-  // extra matrix for normal transformation to keep them orthogonal to surface
-  normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
-    1, GL_FALSE, glm::value_ptr(normal_matrix));
-
-  // bind the VAO to draw
-  glBindVertexArray(planet_object.vertex_AO);
-
-  // draw bound vertex array using bound shader
-  glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  model_matrix = glm::translate(glm::mat4{}, glm::fvec3{ 0.0f, 0.0f, 0.0f });
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-    1, GL_FALSE, glm::value_ptr(model_matrix));
-
-  // extra matrix for normal transformation to keep them orthogonal to surface
-  normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
-    1, GL_FALSE, glm::value_ptr(normal_matrix));
-
-  // bind the VAO to draw
-  glBindVertexArray(planet_object.vertex_AO);
-
-  // draw bound vertex array using bound shader
-  glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
-  */
 }
 
 void ApplicationSolar::uploadView() {
@@ -245,5 +181,18 @@ void ApplicationSolar::resizeCallback(unsigned width, unsigned height) {
 // exe entry point
 int main(int argc, char* argv[]) {
 
+  glm::fmat4 Model = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1} };
+  glm::fmat4 Model1 = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1} };
+  glm::fmat4 Translate = { {1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {1,1,1,1} };
+  glm::fmat4 Rotate = { {cos(60), 0, -1 * sin(60),0}, {0,1,0,0}, { sin(60), 0, cos(60),0}, {0,0,0,1} };
+
+  Model1 = glm::rotate(Model1, float(60.0), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+  Model1 = glm::translate(Model1, glm::fvec3{ 1.0f, 1.0f, 1.0f });
+  Model = Translate * Model;
+  Model = Rotate * Model;
+  std::cout << " Matrix with mult: " << glm::to_string(Model) << "\n";
+  std::cout << " Matrix with function: " << glm::to_string(Model1) << "\n";
+
   Application::run<ApplicationSolar>(argc, argv, 3, 2);
 }
+

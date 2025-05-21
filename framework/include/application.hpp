@@ -77,9 +77,9 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     std::vector<node*> root_children = {};
     glm::mat4;
 
-    node root = { nullptr, root_children, "root", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
+    node root = { nullptr, root_children, "root", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
 
-    pointLightNode sun_1 = { nullptr, root_children, "sun", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3{1, 1, 0.8}, 1 };
+    pointLightNode sun_1 = { nullptr, root_children, "sun", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3{1, 1, 0.8}, 1 };
     root.addChildren(&sun_1);
 
     geometryNode planet_1 = { nullptr, root_children, "mercury", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
@@ -108,6 +108,7 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
 
     geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
     planet_3.addChildren(&moon_1);
+
 
 
     // rendering loop
