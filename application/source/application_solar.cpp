@@ -44,12 +44,26 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   // bind shader to upload uniforms
   
   
-  glUseProgram(m_shaders.at("planet").handle);
+ 
 
   // get world transform from parent and add own local transform to it
   // unnamed matrix is used to rotatet the children around the parent based on the time
   glm::fmat4 ModelMatrix = currentNode->getParent()->getWorldTransform() * glm::fmat4{ {cos(angle), 0, -1 * sin(angle),0}, {0,1,0,0}, { sin(angle), 0, cos(angle),0}, {0,0,0,1} } * currentNode->getLocalTransform();
  
+  glUseProgram(m_shaders.at("orbit").handle);
+  glBindVertexArray(orbit.vertex_AO);
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
+    1, GL_FALSE, glm::value_ptr(glm::mat4{ glm::inverse(m_view_transform)}));
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ParentMatrix"),
+    1, GL_FALSE, glm::value_ptr(currentNode->getParent()->getWorldTransform()));
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ModelMatrix"),
+    1, GL_FALSE, glm::value_ptr(currentNode->getLocalTransform()));
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ProjectionMatrix"),
+    1, GL_FALSE, glm::value_ptr(m_view_projection));
+  glDrawArrays(orbit.draw_mode, 0, orbit.num_elements);
+
+  glUseProgram(m_shaders.at("planet").handle);
+
   // update own world transform to give it to children
   currentNode->setWorldTransform(ModelMatrix);
 
@@ -75,7 +89,7 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
       1, GL_FALSE, glm::value_ptr(glm::mat4{ glm::inverse(m_view_transform) }));
     glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ProjectionMatrix"),
       1, GL_FALSE, glm::value_ptr(m_view_projection));
-    glDrawArrays(GL_POINTS, 0, 50);
+    glDrawArrays(star.draw_mode, 0, 50);
   }
 
   //call the shader function for all children
@@ -111,11 +125,19 @@ void ApplicationSolar::uploadUniforms() {
   uploadView();
   //glUseProgram(m_shaders.at("planet").handle);
   uploadProjection();
+
   glUseProgram(m_shaders.at("star").handle);
   glm::fmat4 view_matrix = glm::inverse(m_view_transform);
   glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ModelViewMatrix"),
     1, GL_FALSE, glm::value_ptr(view_matrix));
   glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ProjectionMatrix"),
+    1, GL_FALSE, glm::value_ptr(m_view_projection));
+  glUseProgram(m_shaders.at("planet").handle);
+
+  glUseProgram(m_shaders.at("orbit").handle);
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
+    1, GL_FALSE, glm::value_ptr(view_matrix));
+  glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ProjectionMatrix"),
     1, GL_FALSE, glm::value_ptr(m_view_projection));
   glUseProgram(m_shaders.at("planet").handle);
 }
@@ -129,7 +151,9 @@ void ApplicationSolar::initializeShaderPrograms() {
   
   m_shaders.emplace("star", shader_program{{{GL_VERTEX_SHADER,m_resource_path + "shaders/vao.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/vao.frag"}}});
-  
+
+  m_shaders.emplace("orbit", shader_program{ {{GL_VERTEX_SHADER,m_resource_path + "shaders/orbit.vert"},
+                                           {GL_FRAGMENT_SHADER, m_resource_path + "shaders/orbit.frag"}} });
   // request uniform locations for shader program
   m_shaders.at("planet").u_locs["NormalMatrix"] = -1;
   m_shaders.at("planet").u_locs["ModelMatrix"] = -1;
@@ -137,6 +161,10 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
   m_shaders.at("star").u_locs["ProjectionMatrix"] = -2;
   m_shaders.at("star").u_locs["ModelViewMatrix"] = -2;
+  m_shaders.at("orbit").u_locs["ProjectionMatrix"] = -3;
+  m_shaders.at("orbit").u_locs["ViewMatrix"] = -3;
+  m_shaders.at("orbit").u_locs["ModelMatrix"] = -3;
+  m_shaders.at("orbit").u_locs["ParentMatrix"] = -3;
 }
 
 // load models
@@ -158,10 +186,12 @@ void ApplicationSolar::initializeGeometry() {
   */
   model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
   
-  star = { 1, 1, 1, GL_POINTS, 3 };
+  star = { 1, 1, 1, GL_POINTS, 50 };
+  orbit = { 2, 2, 2, GL_POINTS, 360 / 5 };
   std::vector<float> stars = {};
   float star_points[50*6];
-  for (int i = 0; i < 50; ++i) {
+  float orbit_angles[360 / 5];
+  for (int i = 0; i < star.num_elements; ++i) {
     stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
     stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
     stars.push_back(16 + std::rand() % 84 * -1);
@@ -169,11 +199,16 @@ void ApplicationSolar::initializeGeometry() {
     stars.push_back((std::rand() % 255) / 255.0f);
     stars.push_back((std::rand() % 255) / 255.0f);
   }
-  for (int i = 0; i < 20 * 6; ++i) {
-    std::cout << "position " << i << " :" << (std::rand() % 3 - 1) << "\n";
-  }
   std::copy(stars.begin(), stars.end(), star_points);
-  
+
+  float angle = 0;
+  for (int i = 0; i < 360 / 5; ++i) {
+    angle = angle + 5.0f;
+    orbit_angles[i] = angle;
+    std::cout << "angle: " << angle << "\n";
+  }
+
+
   glGenVertexArrays(1, &star.vertex_AO);
   glGenBuffers(1, &star.vertex_BO);
   glBindVertexArray(star.vertex_AO);
@@ -183,6 +218,15 @@ void ApplicationSolar::initializeGeometry() {
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)12);
   glEnableVertexAttribArray(1);
+
+  glGenVertexArrays(1, &orbit.vertex_AO);
+  glGenBuffers(1, &orbit.vertex_BO);
+  glBindVertexArray(orbit.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, orbit.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(orbit_angles), &orbit_angles, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  
 
   // generate vertex array object
   glGenVertexArrays(1, &planet_object.vertex_AO);
@@ -258,7 +302,7 @@ void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
   // when used first rotates your camera a lot due to the potentially large x and y positions
   // bad handeling when using both y and x achsis
 
-    m_view_projection = glm::rotate(m_view_projection, float(0.004 * pos_x ), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+    //m_view_projection = glm::rotate(m_view_projection, float(0.004 * pos_x ), glm::fvec3{ 0.0f, 1.0f, 0.0f });
     m_view_projection = glm::rotate(m_view_projection, float(0.004 * pos_y), glm::fvec3{ 1.0f, 0.0f, 0.0f });
     uploadProjection();
   

@@ -1,0 +1,18 @@
+#version 150
+#extension GL_ARB_explicit_attrib_location : require
+// glVertexAttribPointer mapped positions to first
+layout(location = 0) in float angle;
+
+//Matrix Uniforms uploaded with glUniform*
+uniform mat4 ViewMatrix;
+uniform mat4 ModelMatrix;
+uniform mat4 ParentMatrix;
+uniform mat4 ProjectionMatrix;
+
+out vec3 pass_Color;
+
+void main() {
+    mat4 rotation = mat4(cos(angle), 0, -1 * sin(angle), 0, 0, 1, 0, 0, sin(angle), 0, cos(angle), 0, 0, 0, 0, 1);
+	gl_Position =  ProjectionMatrix * ViewMatrix * ParentMatrix * rotation * ModelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+	pass_Color = vec3(1, 0, 1);
+}

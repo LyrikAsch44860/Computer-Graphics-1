@@ -118,7 +118,7 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     geometryNode planet_8 = { nullptr, root_children, "neptun", "no_clue", 0, glm::fmat4{{cos(20), 0, -1 * sin(20),0}, {0,1,0,0}, { sin(20), 0, cos(20),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-16,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
     sun_1.addChildren(&planet_8);
 
-    geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-1,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{0.5,0,0,0}, {0,0.5,0,0}, {0,0,0.5,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
     
     
     planet_3.addChildren(&moon_1);
