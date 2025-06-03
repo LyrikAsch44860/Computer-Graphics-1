@@ -43,13 +43,11 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   std::vector<node*> childList = currentNode->getChildrenList();
   // bind shader to upload uniforms
   
-  
- 
-
   // get world transform from parent and add own local transform to it
   // unnamed matrix is used to rotatet the children around the parent based on the time
   glm::fmat4 ModelMatrix = currentNode->getParent()->getWorldTransform() * glm::fmat4{ {cos(angle), 0, -1 * sin(angle),0}, {0,1,0,0}, { sin(angle), 0, cos(angle),0}, {0,0,0,1} } * currentNode->getLocalTransform();
  
+  // sends information to orbit shaders and draws the orbits 
   glUseProgram(m_shaders.at("orbit").handle);
   glBindVertexArray(orbit.vertex_AO);
   glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
@@ -82,7 +80,9 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
 
   if (currentNode->getName() == "sun") {
-    //std::cout << "here";
+    // Debugging std::cout << "here";
+    // printing stars in the if statement so they get only printed once
+    // send information to orbit shaders and prints the stars
     glUseProgram(m_shaders.at("star").handle);
     glBindVertexArray(star.vertex_AO);
     glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ModelViewMatrix"),
@@ -126,6 +126,7 @@ void ApplicationSolar::uploadUniforms() {
   //glUseProgram(m_shaders.at("planet").handle);
   uploadProjection();
 
+  // update the view for the new shaders (Does not really work how i wanted it)
   glUseProgram(m_shaders.at("star").handle);
   glm::fmat4 view_matrix = glm::inverse(m_view_transform);
   glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ModelViewMatrix"),
@@ -149,6 +150,7 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.emplace("planet", shader_program{{{GL_VERTEX_SHADER,m_resource_path + "shaders/simple.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/simple.frag"}}});
   
+  // added extra shaders for stars and orbits
   m_shaders.emplace("star", shader_program{{{GL_VERTEX_SHADER,m_resource_path + "shaders/vao.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/vao.frag"}}});
 
@@ -170,60 +172,57 @@ void ApplicationSolar::initializeShaderPrograms() {
 // load models
 
 void ApplicationSolar::initializeGeometry() {
-/*
-  struct model_object {
-    // vertex array object
-    GLuint vertex_AO = 0;
-    // vertex buffer object
-    GLuint vertex_BO = 0;
-    // index buffer object
-    GLuint element_BO = 0;
-    // primitive type to draw
-    GLenum draw_mode = GL_NONE;
-    // indices number, if EBO exists
-    GLsizei num_elements = 0;
-  };
-  */
   model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
   
+  // added one model for stars and one for orbits
   star = { 1, 1, 1, GL_POINTS, 50 };
+  // orbits have one vertex every five degrees
   orbit = { 2, 2, 2, GL_POINTS, 360 / 5 };
   std::vector<float> stars = {};
+  // Arrays for DrawArray function because i couldnt get DrawElements to work the way i wanted it to
   float star_points[50*6];
   float orbit_angles[360 / 5];
   for (int i = 0; i < star.num_elements; ++i) {
+    // generate random positions between 16 and 100 in positive and negative
     stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
     stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
+    // always -1 to have them infront of the starting view
     stars.push_back(16 + std::rand() % 84 * -1);
     stars.push_back((std::rand() % 255) / 255.0f);
     stars.push_back((std::rand() % 255) / 255.0f);
     stars.push_back((std::rand() % 255) / 255.0f);
   }
+  // copy elements into array
   std::copy(stars.begin(), stars.end(), star_points);
 
   float angle = 0;
+  // generate angles with five degrees difference each
   for (int i = 0; i < 360 / 5; ++i) {
     angle = angle + 5.0f;
     orbit_angles[i] = angle;
-    std::cout << "angle: " << angle << "\n";
+    // Debugging std::cout << "angle: " << angle << "\n";
   }
 
-
+  // Classic open Gl object creating
   glGenVertexArrays(1, &star.vertex_AO);
   glGenBuffers(1, &star.vertex_BO);
   glBindVertexArray(star.vertex_AO);
   glBindBuffer(GL_ARRAY_BUFFER, star.vertex_BO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(star_points), &star_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  // second three are the rgb color values
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)12);
   glEnableVertexAttribArray(1);
 
+  // same for orbits
   glGenVertexArrays(1, &orbit.vertex_AO);
   glGenBuffers(1, &orbit.vertex_BO);
   glBindVertexArray(orbit.vertex_AO);
   glBindBuffer(GL_ARRAY_BUFFER, orbit.vertex_BO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(orbit_angles), &orbit_angles, GL_STATIC_DRAW);
+  // only one data per vertex which is the angle
   glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
   
