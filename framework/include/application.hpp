@@ -85,40 +85,40 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     // geometry nodes have a translation matrix multiplied by a rotation matrix as their local Transform
     // rotation is only an offset 
 
-    node root = { nullptr, root_children, "root", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
+    node root = { nullptr, root_children, "root", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3 {0,0,0} };
 
     sceneGraph graph = { "Scene Graph" , &root };
 
-    cameraNode camera = { nullptr, root_children, "camera", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, true, true, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
+    cameraNode camera = { nullptr, root_children, "camera", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3 {0,0,0}, true, true, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}} };
     root.addChildren(&camera);
 
-    pointLightNode sun_1 = { nullptr, root_children, "sun", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3{1, 1, 0.8}, 1 };
+    pointLightNode sun_1 = { nullptr, root_children, "sun", "no_clue", 0, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, glm::vec3 {0,0,0}, glm::vec3{1, 1, 0.8}, 1 };
     root.addChildren(&sun_1);
 
-    geometryNode planet_1 = { nullptr, root_children, "mercury", "no_clue", 0, glm::fmat4{{cos(60), 0, -1 * sin(60),0}, {0,1,0,0}, { sin(60), 0, cos(60),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_1 = { nullptr, root_children, "mercury", "no_clue", 0, glm::fmat4{{cos(60), 0, -1 * sin(60),0}, {0,1,0,0}, { sin(60), 0, cos(60),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {255.0f,209.0f,148.0f}, model{} };
     sun_1.addChildren(&planet_1);
 
-    geometryNode planet_2 = { nullptr, root_children, "venus", "no_clue", 0, glm::fmat4{{cos(30), 0, -1 * sin(30),0}, {0,1,0,0}, { sin(30), 0, cos(30),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-4,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_2 = { nullptr, root_children, "venus", "no_clue", 0, glm::fmat4{{cos(30), 0, -1 * sin(30),0}, {0,1,0,0}, { sin(30), 0, cos(30),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-4,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {191.0f,140.0f,0.0f}, model{} };
     sun_1.addChildren(&planet_2);
 
-    geometryNode planet_3 = { nullptr, root_children, "super-earth", "no_clue", 0, glm::fmat4{{cos(170), 0, -1 * sin(170),0}, {0,1,0,0}, {sin(170),0, cos(170),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-6,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_3 = { nullptr, root_children, "super-earth", "no_clue", 0, glm::fmat4{{cos(170), 0, -1 * sin(170),0}, {0,1,0,0}, {sin(170),0, cos(170),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-6,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {63.0f, 114.0f, 255.0f}, model{} };
 
-    geometryNode planet_4 = { nullptr, root_children, "mars", "no_clue", 0, glm::fmat4{{cos(50), 0, -1 * sin(50),0}, {0,1,0,0}, { sin(50), 0, cos(50),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-8,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_4 = { nullptr, root_children, "mars", "no_clue", 0, glm::fmat4{{cos(50), 0, -1 * sin(50),0}, {0,1,0,0}, { sin(50), 0, cos(50),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-8,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {222.0f,22.0f,22.0f}, model{} };
     sun_1.addChildren(&planet_4);
 
-    geometryNode planet_5 = { nullptr, root_children, "jupiter", "no_clue", 0, glm::fmat4{{cos(30), 0, -1 * sin(30),0}, {0,1,0,0}, { sin(30), 0, cos(30),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-10,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_5 = { nullptr, root_children, "jupiter", "no_clue", 0, glm::fmat4{{cos(30), 0, -1 * sin(30),0}, {0,1,0,0}, { sin(30), 0, cos(30),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-10,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {191.0f,140.0f,0.0f}, model{} };
     sun_1.addChildren(&planet_5);
 
-    geometryNode planet_6 = { nullptr, root_children, "saturn", "no_clue", 0, glm::fmat4{{cos(80), 0, -1 * sin(80),0}, {0,1,0,0}, { sin(80), 0, cos(80),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-12,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_6 = { nullptr, root_children, "saturn", "no_clue", 0, glm::fmat4{{cos(80), 0, -1 * sin(80),0}, {0,1,0,0}, { sin(80), 0, cos(80),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-12,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {222.0f,189.0f,22.0f}, model{} };
     sun_1.addChildren(&planet_6);
 
-    geometryNode planet_7 = { nullptr, root_children, "uranus", "no_clue", 0, glm::fmat4{{cos(40), 0, -1 * sin(40),0}, {0,1,0,0}, { sin(40), 0, cos(40),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-14,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}},model{} };
+    geometryNode planet_7 = { nullptr, root_children, "uranus", "no_clue", 0, glm::fmat4{{cos(40), 0, -1 * sin(40),0}, {0,1,0,0}, { sin(40), 0, cos(40),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-14,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {42.0f,121.0f,210.0f},model{} };
     sun_1.addChildren(&planet_7);
 
-    geometryNode planet_8 = { nullptr, root_children, "neptun", "no_clue", 0, glm::fmat4{{cos(20), 0, -1 * sin(20),0}, {0,1,0,0}, { sin(20), 0, cos(20),0}, {0,0,0,1}} * glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-16,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode planet_8 = { nullptr, root_children, "neptun", "no_clue", 0, glm::fmat4{{cos(20), 0, -1 * sin(20),0}, {0,1,0,0}, { sin(20), 0, cos(20),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-16,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {0.0f,81.0f,174.0f}, model{} };
     sun_1.addChildren(&planet_8);
 
-    geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{0.5,0,0,0}, {0,0.5,0,0}, {0,0,0.5,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, model{} };
+    geometryNode moon_1 = { nullptr, root_children, "moon", "no_clue", 0, glm::fmat4{{0.5,0,0,0}, {0,0.5,0,0}, {0,0,0.5,0}, {0,0,-2,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {145.0f,145.0f,145.0f}, model{} };
     
     
     planet_3.addChildren(&moon_1);

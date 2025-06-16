@@ -1,6 +1,6 @@
 #include "point_light_node.hpp"
 
-	pointLightNode::pointLightNode(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::mat4 localTransform, glm::mat4 worldTransform, glm::vec3 lightColor, float lightIntensity) : lightColor{ lightColor }, lightIntensity{ lightIntensity }, node{ parent, children, name, path, depth, localTransform, worldTransform } {
+	pointLightNode::pointLightNode(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::mat4 localTransform, glm::mat4 worldTransform, glm::vec3 color, glm::vec3 lightColor, float lightIntensity) : lightColor{ lightColor }, lightIntensity{ lightIntensity }, node{ parent, children, name, path, depth, localTransform, worldTransform, color } {
 	}
 
 	// just some getters and setters

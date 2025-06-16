@@ -1,7 +1,7 @@
 #include "node.hpp"
 		
-	node::node(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::fmat4 localTransform, glm::fmat4 worldTransform) :
-		parent{ parent }, children{ children }, name{ name }, path{ name }, depth{depth}, localTransform{localTransform}, worldTransform{worldTransform} {
+node::node(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::fmat4 localTransform, glm::fmat4 worldTransform, glm::vec3 color = glm::vec3{ 0,0,0 }) :
+		parent{ parent }, children{ children }, name{ name }, path{ name }, depth{ depth }, localTransform{ localTransform }, worldTransform{ worldTransform }, color{color} {
 	}
 	node::~node() {}
 
@@ -70,6 +70,15 @@
 		return;
 	}
 
+	glm::vec3 node::getColor() {
+		return color;
+	}
+
+	void node::setcolor(glm::vec3 newColor) {
+		color = newColor;
+		return;
+	}
+
 	//adds a new node pointer at the end of children vector
 	void node::addChildren(node* newChild) {
 		children.push_back(newChild);
@@ -88,3 +97,5 @@
 		}
 		return nullptr;
 	}
+
+	

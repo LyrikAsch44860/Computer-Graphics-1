@@ -8,7 +8,7 @@
 class pointLightNode : public node
 {
 public:
-	pointLightNode(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::mat4 localTransform, glm::mat4 worldTransform, glm::vec3 LightColor, float LightIntensity);
+	pointLightNode(node* parent, std::vector<node*> children, std::string name, std::string path, int depth, glm::mat4 localTransform, glm::mat4 worldTransform, glm::vec3 color, glm::vec3 LightColor, float LightIntensity);
 	float getLightIntensity();
 	void setLightIntensity(float);
 	glm::vec3 getLightColor();
