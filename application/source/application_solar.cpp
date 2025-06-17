@@ -41,10 +41,7 @@ ApplicationSolar::~ApplicationSolar() {
 
 void ApplicationSolar::render(node* currentNode, float angle) const {
   std::vector<node*> childList = currentNode->getChildrenList();
-  // bind shader to upload uniforms
   
-  std::cout << currentNode->getName() << "\n";
-
   // get world transform from parent and add own local transform to it
   // unnamed matrix is used to rotatet the children around the parent based on the time
   glm::fmat4 ModelMatrix = currentNode->getParent()->getWorldTransform() * glm::fmat4{ {cos(angle), 0, -1 * sin(angle),0}, {0,1,0,0}, { sin(angle), 0, cos(angle),0}, {0,0,0,1} } * currentNode->getLocalTransform();
@@ -61,8 +58,10 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   glDrawArrays(orbit.draw_mode, 0, orbit.num_elements);
 
   if (currentNode->getName() == "sun") {
+    // upload color of the light to planet shaders
     glUseProgram(m_shaders.at("planet").handle);
     glUniform3f(m_shaders.at("planet").u_locs.at("LightColor"), currentNode->getColor()[0], currentNode->getColor()[1], currentNode->getColor()[2]);
+
     glUseProgram(m_shaders.at("sun").handle);
     glUniformMatrix4fv(m_shaders.at("sun").u_locs.at("ModelMatrix"),
       1, GL_FALSE, glm::value_ptr(ModelMatrix));
@@ -73,7 +72,7 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
       1, GL_FALSE, glm::value_ptr(normal_matrix));
   }
   else {
-    std::cout << "color: " << currentNode->getColor()[0] << ", " << currentNode->getColor()[1] << "," << currentNode->getColor()[2] << "\n";
+    // upload planet color to planet shader
     glUseProgram(m_shaders.at("planet").handle);
     glUniform3f(m_shaders.at("planet").u_locs.at("PlanetColor"), currentNode->getColor()[0], currentNode->getColor()[1], currentNode->getColor()[2]);
     glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
@@ -96,11 +95,11 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
   if (currentNode->getName() == "uranus") {
     // Debugging std::cout << "here";
     // printing stars in the if statement so they get only printed once
-    // send information to orbit shaders and prints the stars
+    // send information to star shaders and prints the stars
     glUseProgram(m_shaders.at("star").handle);
     glBindVertexArray(star.vertex_AO);
     
-    glDrawArrays(star.draw_mode, 0, 50);
+    glDrawArrays(star.draw_mode, 0, star.num_elements);
   }
 
   //call the shader function for all children
@@ -159,8 +158,6 @@ void ApplicationSolar::uploadUniforms() {
   uploadView();
   //glUseProgram(m_shaders.at("planet").handle);
   uploadProjection();
-
-  // update the view for the new shaders (Does not really work how i wanted it)
   
 }
 
@@ -171,6 +168,7 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.emplace("planet", shader_program{{{GL_VERTEX_SHADER,m_resource_path + "shaders/simple.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/simple.frag"}}});
   
+  // added extra shader for sun
   m_shaders.emplace("sun", shader_program{ {{GL_VERTEX_SHADER,m_resource_path + "shaders/sun.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/sun.frag"}} });
 
@@ -206,19 +204,18 @@ void ApplicationSolar::initializeGeometry() {
   model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
   
   // added one model for stars and one for orbits
-  star = { 1, 1, 1, GL_POINTS, 50 };
+  star = { 1, 1, 1, GL_POINTS, 200 };
   // orbits have one vertex every five degrees
   orbit = { 2, 2, 2, GL_LINE_STRIP, 360 / 5 + 1};
   std::vector<float> stars = {};
   // Arrays for DrawArray function because i couldnt get DrawElements to work the way i wanted it to
-  float star_points[50*6];
+  float star_points[200*6];
   float orbit_angles[360 / 5 + 1];
   for (int i = 0; i < star.num_elements; ++i) {
     // generate random positions between 16 and 100 in positive and negative
-    stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
-    stars.push_back(16 + std::rand() % 84 * (std::rand() % 3 - 1));
-    // always -1 to have them infront of the starting view
-    stars.push_back(16 + std::rand() % 84 * -1);
+    stars.push_back(16 + std::rand() % (84 *  2) - 84);
+    stars.push_back(16 + std::rand() % (84 * 2) - 84);
+    stars.push_back(16 + std::rand() % (84 * 2) - 84);
     stars.push_back((std::rand() % 255) / 255.0f);
     stars.push_back((std::rand() % 255) / 255.0f);
     stars.push_back((std::rand() % 255) / 255.0f);
@@ -294,6 +291,8 @@ void ApplicationSolar::initializeGeometry() {
 // handle key input
 // added movment for key A, D, Space and Ctrl for rigth, left, up and down
 void ApplicationSolar::keyCallback(int key, int action, int mods) {
+
+  // upload variable for planet outline to shader
   if (key == GLFW_KEY_1 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     glUniform1f(m_shaders.at("planet").u_locs.at("outline"), 1.0f);
   }

@@ -24,9 +24,14 @@ void main(void)
 {
 	gl_Position = (ProjectionMatrix  * ViewMatrix * ModelMatrix) * vec4(in_Position, 1.0);
 	pass_Normal = (NormalMatrix * vec4(in_Normal, 1.0)).xyz;
+
+	// vector from point to lightsource, which is at (0,0,0)
 	pass_Direction = -1 * (ModelMatrix * vec4(in_Position, 1.0)).xyz;
+
 	pass_PlanetColor = PlanetColor;
 	pass_LightColor = LightColor;
+
+	// vector from point to camera
 	pass_CameraDirection = (inverse(ViewMatrix) * (vec4(0.0,0.0,0.0,1.0)) - ModelMatrix * vec4(in_Position, 1.0)).xyz;
 	pass_outline = outline;
 }
