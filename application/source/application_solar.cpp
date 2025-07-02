@@ -121,18 +121,21 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
     glDrawArrays(star.draw_mode, 0, star.num_elements);
     
     // render skyshpere only once per iteration
-    ModelMatrix = glm::fmat4{{50,0,0,0},{0,50,0,0},{0,0,50,0},{0,0,0,1}};
+    ModelMatrix = glm::fmat4{{50,0,0,0},{0,50,0,0},{0,0,50,0},{-25,-25,-25,1}};
     glUseProgram(m_shaders.at("square").handle);
-    glActiveTexture(GL_TEXTURE10);
-    glBindTexture(GL_TEXTURE_2D, boxTexId[0]);
-    glUniform1i(m_shaders.at("square").u_locs.at("Texture"), 10);
-    glBindVertexArray(planet_object.vertex_AO);
-    // no longer used glBindVertexArray(skyBox_bottom.vertex_AO);
     glUniformMatrix4fv(m_shaders.at("square").u_locs.at("ModelMatrix"),
       1, GL_FALSE, glm::value_ptr(ModelMatrix));
-    // no longer used glDrawArrays(skyBox_bottom.draw_mode, 0, skyBox_bottom.num_elements);
-    glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
+
+    for (int i = 0; i < 6; ++i)
+    {
+      glActiveTexture(texname_texindex_map.at(texnames[i + 10]).second);
+      glBindTexture(GL_TEXTURE_2D, texids[i + 10]);
+      glUniform1i(m_shaders.at("square").u_locs.at("Texture"), texname_texindex_map.at(texnames[i + 10]).first);
+      glBindVertexArray(boxObjects[i]->vertex_AO);
+      glDrawArrays(boxObjects[i]->draw_mode, 0, boxObjects[i]->num_elements);
+    }
   }
+
 
   //call the shader function for all children
   for (int i = 0; i < childList.size(); ++i) {
@@ -259,13 +262,15 @@ void ApplicationSolar::initializeGeometry() {
 
   // no longer used model for skybox (using skysphere instead)
   skyBox_top = { 6,6,6,GL_TRIANGLES, 6 };
-  skyBox_bottom = { 6,6,6,GL_TRIANGLES, 6 * 6 };
+  skyBox_bottom = { 6,6,6,GL_TRIANGLES, 6 };
   skyBox_front = { 6,6,6,GL_TRIANGLES, 6 };
   skyBox_back = { 6,6,6,GL_TRIANGLES, 6 };
   skyBox_left = { 6,6,6,GL_TRIANGLES, 6 };
   skyBox_right = { 6,6,6,GL_TRIANGLES, 6 };
   // orbits have one vertex every five degrees
   orbit = { 2, 2, 2, GL_LINE_STRIP, 360 / 5 + 1 };
+
+  boxObjects = { &skyBox_bottom,&skyBox_top,&skyBox_left,&skyBox_right,&skyBox_front,&skyBox_back };
 
 
   std::vector<float> stars = {};
@@ -293,27 +298,27 @@ void ApplicationSolar::initializeGeometry() {
   }
 
   // no longer used vertecies for box sides
-  std::vector<float> box_bottom_points{ 0.0,0.0,0.0, 0.0,0.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 , 1.0,0.0,1.0, 1.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0, 0.0,1.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
-  std::vector<float> box_top_points{ 0.0,1.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
-  std::vector<float> box_left_points{ 0.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 , 0.0,1.0,1.0, 1.0,1.0 ,0.0,1.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 };
-  std::vector<float> box_right_points{ 1.0,0.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,1.0,0.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,1.0,0.0,1.0, 0.0,1.0 };
-  std::vector<float> box_front_points{ 0.0,0.0,1.0, 0.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
-  std::vector<float> box_back_points{ 0.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 0.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 , 1.0,1.0,0.0, 1.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,1.0,0.0, 0.0,1.0 };
+  float box_bottom_points[5*6]{ 0.0,0.0,0.0, 0.0,1.0 ,1.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,1.0, 1.0,1.0 , 1.0,0.0,1.0, 1.0,0.0 ,1.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,1.0, 1.0,1.0 };
+  float box_top_points[5*6]{ 0.0,1.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 0.0,1.0 ,0.0,1.0,1.0, 1.0,0.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 0.0,1.0 ,0.0,1.0,1.0, 1.0,0.0 };
+  float box_left_points[5*6]{ 0.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 0.0,1.0 ,0.0,0.0,1.0, 1.0,0.0 , 0.0,1.0,1.0, 1.0,1.0 ,0.0,1.0,0.0, 0.0,1.0 ,0.0,0.0,1.0, 1.0,0.0 };
+  float box_right_points[5*6]{ 1.0,0.0,0.0, 1.0,0.0 ,1.0,1.0,0.0, 1.0,1.0 ,1.0,0.0,1.0, 0.0,0.0 , 1.0,1.0,1.0, 0.0,1.0 ,1.0,1.0,0.0, 1.0,1.0 ,1.0,0.0,1.0, 0.0,0.0 };
+  float box_front_points[5*6]{ 0.0,0.0,1.0, 0.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
+  float box_back_points[5*6]{ 0.0,0.0,0.0, 1.0,0.0 ,0.0,1.0,0.0, 1.0,1.0 ,1.0,0.0,0.0, 0.0,0.0 , 1.0,1.0,0.0, 0.0,1.0 ,1.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 1.0,1.0 };
 
+  /*
   box_bottom_points.insert(box_bottom_points.end(), box_left_points.begin(), box_left_points.end());
   box_bottom_points.insert(box_bottom_points.end(), box_right_points.begin(), box_right_points.end());
   box_bottom_points.insert(box_bottom_points.end(), box_front_points.begin(), box_front_points.end());
   box_bottom_points.insert(box_bottom_points.end(), box_back_points.begin(), box_back_points.end());
-  float box_bottom_points1[5 * 6 * 6];
-
-  std::copy(box_bottom_points.begin(), box_bottom_points.end(), box_bottom_points1);
+  
+  */
 
   // no longer used box object creation
   glGenVertexArrays(1, &skyBox_bottom.vertex_AO);
   glGenBuffers(1, &skyBox_bottom.vertex_BO);
   glBindVertexArray(skyBox_bottom.vertex_AO);
   glBindBuffer(GL_ARRAY_BUFFER, skyBox_bottom.vertex_BO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(box_bottom_points1), &box_bottom_points1, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_bottom_points), &box_bottom_points, GL_STATIC_DRAW);
   // first three elements of each Vertex are the position coordinates
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
@@ -321,7 +326,64 @@ void ApplicationSolar::initializeGeometry() {
   glEnableVertexAttribArray(1);
   // second two are texture coordinates
 
+  glGenVertexArrays(1, &skyBox_top.vertex_AO);
+  glGenBuffers(1, &skyBox_top.vertex_BO);
+  glBindVertexArray(skyBox_top.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_top.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_top_points), &box_top_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+
+  glGenVertexArrays(1, &skyBox_left.vertex_AO);
+  glGenBuffers(1, &skyBox_left.vertex_BO);
+  glBindVertexArray(skyBox_left.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_left.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_left_points), &box_left_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+
+  glGenVertexArrays(1, &skyBox_right.vertex_AO);
+  glGenBuffers(1, &skyBox_right.vertex_BO);
+  glBindVertexArray(skyBox_right.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_right.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_right_points), &box_right_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+
+  glGenVertexArrays(1, &skyBox_front.vertex_AO);
+  glGenBuffers(1, &skyBox_front.vertex_BO);
+  glBindVertexArray(skyBox_front.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_front.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_front_points), &box_front_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+
+  glGenVertexArrays(1, &skyBox_back.vertex_AO);
+  glGenBuffers(1, &skyBox_back.vertex_BO);
+  glBindVertexArray(skyBox_back.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_back.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_back_points), &box_back_points, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+
   // skybox (skysphere) texture generation
+
+  /*
   GLuint bottomID;
 
   glActiveTexture(GL_TEXTURE10);
@@ -338,11 +400,11 @@ void ApplicationSolar::initializeGeometry() {
   std::cout << "vAO: " << skyBox_bottom.vertex_AO << "\n";
   std::cout << "ID: " << boxTexId[0] << "\n";
   std::cout << "#########################################\n";
-  */
+  
 
   pixel_data* Texture1 = new pixel_data{ texture_loader::file(m_resource_path + "textures/skybox.png") };
   glTexImage2D(GL_TEXTURE_2D, 0, Texture1->channels, Texture1->width, Texture1->height, 0, Texture1->channels, Texture1->channel_type, &Texture1->pixels[0]);
-  
+  */
 
   // Classic open Gl object creating
   glGenVertexArrays(1, &star.vertex_AO);
@@ -379,7 +441,13 @@ void ApplicationSolar::initializeGeometry() {
   texnames.push_back("uranus");
   texnames.push_back("neptun");
   texnames.push_back("moon");
-
+  texnames.push_back("bottom");
+  texnames.push_back("top");
+  texnames.push_back("left");
+  texnames.push_back("right");
+  texnames.push_back("front");
+  texnames.push_back("back");
+  
   texname_texindex_map["sun"] = {0,GL_TEXTURE0} ;
   texname_texindex_map["mercury"] = {1,GL_TEXTURE1};
   texname_texindex_map["venus"] = {2,GL_TEXTURE2};
@@ -390,6 +458,12 @@ void ApplicationSolar::initializeGeometry() {
   texname_texindex_map["uranus"] = {7,GL_TEXTURE7};
   texname_texindex_map["neptun"] = {8,GL_TEXTURE8};
   texname_texindex_map["moon"] = { 9,GL_TEXTURE9 };
+  texname_texindex_map["bottom"] = { 10,GL_TEXTURE10 };
+  texname_texindex_map["top"] = { 11,GL_TEXTURE11 };
+  texname_texindex_map["left"] = { 12,GL_TEXTURE12 };
+  texname_texindex_map["right"] = { 13,GL_TEXTURE13 };
+  texname_texindex_map["front"] = { 14,GL_TEXTURE14 };
+  texname_texindex_map["back"] = { 15,GL_TEXTURE15 };
 
   texpaths.push_back("textures/sunmap1.png");
   texpaths.push_back("textures/mercurymap.png");
@@ -401,6 +475,12 @@ void ApplicationSolar::initializeGeometry() {
   texpaths.push_back("textures/uranusmap.png");
   texpaths.push_back("textures/neptunemap.png");
   texpaths.push_back("textures/Moon.png");
+  texpaths.push_back("textures/bottom.png");
+  texpaths.push_back("textures/top.png");
+  texpaths.push_back("textures/left.png");
+  texpaths.push_back("textures/right.png");
+  texpaths.push_back("textures/front.png");
+  texpaths.push_back("textures/back.png");
   // debugging std::cout << "vectorsize" << texnames.size();
   
   // texture generation for all planets

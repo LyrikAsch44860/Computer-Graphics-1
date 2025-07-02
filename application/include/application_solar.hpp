@@ -45,6 +45,7 @@ class ApplicationSolar : public Application {
   model_object skyBox_front;
   model_object skyBox_left;
   model_object skyBox_right;
+  std::vector<model_object*> boxObjects;
   std::vector<GLuint> boxTexId;
   std::map < std::string, std::pair< int, GLenum > > texname_texindex_map;
   std::vector < GLuint > texids;
