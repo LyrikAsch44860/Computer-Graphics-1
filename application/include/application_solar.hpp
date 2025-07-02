@@ -39,6 +39,18 @@ class ApplicationSolar : public Application {
   model_object planet_object;
   model_object star;
   model_object orbit;
+  model_object skyBox_top;
+  model_object skyBox_bottom;
+  model_object skyBox_back;
+  model_object skyBox_front;
+  model_object skyBox_left;
+  model_object skyBox_right;
+  std::vector<GLuint> boxTexId;
+  std::map < std::string, std::pair< int, GLenum > > texname_texindex_map;
+  std::vector < GLuint > texids;
+  std::vector<std::string> texpaths;
+  std::vector<std::string> texnames;
+
   // camera transform matrix
   glm::fmat4 m_view_transform;
   // camera projection matrix

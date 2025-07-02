@@ -102,6 +102,7 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     sun_1.addChildren(&planet_2);
 
     geometryNode planet_3 = { nullptr, root_children, "super-earth", "no_clue", 0, glm::fmat4{{cos(170), 0, -1 * sin(170),0}, {0,1,0,0}, {sin(170),0, cos(170),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-6,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {63.0f, 114.0f, 255.0f}, model{} };
+    sun_1.addChildren(&planet_3);
 
     geometryNode planet_4 = { nullptr, root_children, "mars", "no_clue", 0, glm::fmat4{{cos(50), 0, -1 * sin(50),0}, {0,1,0,0}, { sin(50), 0, cos(50),0}, {0,0,0,1}} *glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,-8,1}}, glm::fmat4{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, {222.0f,22.0f,22.0f}, model{} };
     sun_1.addChildren(&planet_4);
@@ -126,7 +127,7 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
     std::cout << "moon path: " << moon_1.getPath() << "\n";
     
-    sun_1.addChildren(&planet_3);
+    
 
 
     std::cout << "moon Depth: " << moon_1.getDepth() << "\n";
@@ -134,6 +135,7 @@ void Application::run(int argc, char* argv[], unsigned ver_major, unsigned ver_m
     
 
     // rendering loop
+
     while (!glfwWindowShouldClose(window)) {
       // query input
       glfwPollEvents();

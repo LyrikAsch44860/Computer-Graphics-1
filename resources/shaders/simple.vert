@@ -3,6 +3,7 @@
 // vertex attributes of VAO
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec3 in_Normal;
+layout(location = 2) in vec2 in_TextureCoord;
 
 //Matrix Uniforms as specified with glUniformMatrix4fv
 uniform mat4 ModelMatrix;
@@ -19,6 +20,7 @@ out vec3 pass_PlanetColor;
 out vec3 pass_LightColor;
 out vec3 pass_CameraDirection;
 out float pass_outline;
+out vec2 pass_TextureCoord;
 
 void main(void)
 {
@@ -30,6 +32,7 @@ void main(void)
 
 	pass_PlanetColor = PlanetColor;
 	pass_LightColor = LightColor;
+	pass_TextureCoord = in_TextureCoord;
 
 	// vector from point to camera
 	pass_CameraDirection = (inverse(ViewMatrix) * (vec4(0.0,0.0,0.0,1.0)) - ModelMatrix * vec4(in_Position, 1.0)).xyz;

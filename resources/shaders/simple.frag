@@ -6,6 +6,10 @@ in vec3 pass_PlanetColor;
 in vec3 pass_LightColor;
 in vec3 pass_CameraDirection;
 in float pass_outline;
+in vec2 pass_TextureCoord; 
+
+uniform sampler2D Texture;
+
 out vec4 out_Color;
 
 void main() {
@@ -30,10 +34,16 @@ void main() {
     cos_b = 0;
   }
   
-  r = 0.1 * pass_PlanetColor[0]/255 + 0.3 * 3 * pass_PlanetColor[0]/255 * cos_a + pass_PlanetColor[0]/255 * 1.0 * 1 * pow(cos_b,30);
-  g = 0.1 * pass_PlanetColor[1]/255 + 0.3 * 3 * pass_PlanetColor[1]/255 * cos_a + pass_PlanetColor[1]/255 * 1.0 * 1 * pow(cos_b,30);
-  b = 0.1 * pass_PlanetColor[2]/255 + 0.3 * 3 * pass_PlanetColor[2]/255 * cos_a + pass_PlanetColor[2]/255 * 1.0 * 1 * pow(cos_b,30);
+  //r = 0.1 * pass_PlanetColor[0]/255 + 0.3 * 3 * pass_PlanetColor[0]/255 * cos_a + pass_PlanetColor[0]/255 * 1.0 * 1 * pow(cos_b,30);
+  //g = 0.1 * pass_PlanetColor[1]/255 + 0.3 * 3 * pass_PlanetColor[1]/255 * cos_a + pass_PlanetColor[1]/255 * 1.0 * 1 * pow(cos_b,30);
+  //b = 0.1 * pass_PlanetColor[2]/255 + 0.3 * 3 * pass_PlanetColor[2]/255 * cos_a + pass_PlanetColor[2]/255 * 1.0 * 1 * pow(cos_b,30);
 
+  
+    out_Color = 0.1 * texture(Texture, pass_TextureCoord) + 0.3 * 3 * texture(Texture, pass_TextureCoord) * cos_a + texture(Texture, pass_TextureCoord) * 1.0 * 1 * pow(cos_b,30);
+  
+  
+    //out_Color = texture(Texture, pass_TextureCoord);
+  
   // if the outline is visable
   if (cos_view < 0.3 && pass_outline == 1.0)
   {
@@ -41,6 +51,6 @@ void main() {
     g = 1;
     b = 1;
   }
-  out_Color = vec4(r, g, b, 1.0);
+  //out_Color = vec4(r, g, b, 1.0);
   //out_Color = vec4(abs(normalize(pass_Normal)), 1.0);
 }

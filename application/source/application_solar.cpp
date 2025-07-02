@@ -4,6 +4,7 @@
 #include "utils.hpp"
 #include "shader_loader.hpp"
 #include "model_loader.hpp"
+#include "texture_loader.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include "cmath"
 
@@ -25,13 +26,26 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path)
  :Application{resource_path}
  ,planet_object{}
  ,star{}
+ ,texname_texindex_map{}
+  , texids{}
+  , texpaths{}
+  , texnames{}
+  ,skyBox_top{}
+  ,skyBox_bottom{}
+  ,skyBox_back{}
+  ,skyBox_front{}
+  ,skyBox_left{}
+  ,skyBox_right{}
+  ,boxTexId{}
  ,m_view_transform{glm::translate(glm::fmat4{}, glm::fvec3{0.0f, 0.0f, 10.0f})}
  ,m_view_projection{utils::calculate_projection_matrix(initial_aspect_ratio)}
   , lastView{}
 {
   initializeGeometry();
   initializeShaderPrograms();
+  
 }
+
 
 ApplicationSolar::~ApplicationSolar() {
   glDeleteBuffers(1, &planet_object.vertex_BO);
@@ -40,6 +54,7 @@ ApplicationSolar::~ApplicationSolar() {
 }
 
 void ApplicationSolar::render(node* currentNode, float angle) const {
+
   std::vector<node*> childList = currentNode->getChildrenList();
   
   // get world transform from parent and add own local transform to it
@@ -59,21 +74,25 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
 
   if (currentNode->getName() == "sun") {
     // upload color of the light to planet shaders
-    glUseProgram(m_shaders.at("planet").handle);
-    glUniform3f(m_shaders.at("planet").u_locs.at("LightColor"), currentNode->getColor()[0], currentNode->getColor()[1], currentNode->getColor()[2]);
+    //glUseProgram(m_shaders.at("planet").handle);
+    //glUniform3f(m_shaders.at("planet").u_locs.at("LightColor"), currentNode->getColor()[0], currentNode->getColor()[1], currentNode->getColor()[2]);
 
-    glUseProgram(m_shaders.at("sun").handle);
-    glUniformMatrix4fv(m_shaders.at("sun").u_locs.at("ModelMatrix"),
+    glUseProgram(m_shaders.at("square").handle);
+    glActiveTexture(texname_texindex_map.at(currentNode->getName()).second);
+    glBindTexture(GL_TEXTURE_2D, texids[texname_texindex_map.at(currentNode->getName()).first]);
+    glUniform1i(m_shaders.at("square").u_locs.at("Texture"), texname_texindex_map.at(currentNode->getName()).first);
+    glUniformMatrix4fv(m_shaders.at("square").u_locs.at("ModelMatrix"),
       1, GL_FALSE, glm::value_ptr(ModelMatrix));
 
-    // extra matrix for normal transformation to keep them orthogonal to surface
-    glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * ModelMatrix);
-    glUniformMatrix4fv(m_shaders.at("sun").u_locs.at("NormalMatrix"),
-      1, GL_FALSE, glm::value_ptr(normal_matrix));
   }
+
   else {
     // upload planet color to planet shader
+
     glUseProgram(m_shaders.at("planet").handle);
+    glActiveTexture(texname_texindex_map.at(currentNode->getName()).second);
+    glBindTexture(GL_TEXTURE_2D, texids[texname_texindex_map.at(currentNode->getName()).first]);
+    glUniform1i(m_shaders.at("planet").u_locs.at("Texture"), texname_texindex_map.at(currentNode->getName()).first);
     glUniform3f(m_shaders.at("planet").u_locs.at("PlanetColor"), currentNode->getColor()[0], currentNode->getColor()[1], currentNode->getColor()[2]);
     glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
       1, GL_FALSE, glm::value_ptr(ModelMatrix));
@@ -100,6 +119,19 @@ void ApplicationSolar::render(node* currentNode, float angle) const {
     glBindVertexArray(star.vertex_AO);
     
     glDrawArrays(star.draw_mode, 0, star.num_elements);
+    
+    // render skyshpere only once per iteration
+    ModelMatrix = glm::fmat4{{50,0,0,0},{0,50,0,0},{0,0,50,0},{0,0,0,1}};
+    glUseProgram(m_shaders.at("square").handle);
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_2D, boxTexId[0]);
+    glUniform1i(m_shaders.at("square").u_locs.at("Texture"), 10);
+    glBindVertexArray(planet_object.vertex_AO);
+    // no longer used glBindVertexArray(skyBox_bottom.vertex_AO);
+    glUniformMatrix4fv(m_shaders.at("square").u_locs.at("ModelMatrix"),
+      1, GL_FALSE, glm::value_ptr(ModelMatrix));
+    // no longer used glDrawArrays(skyBox_bottom.draw_mode, 0, skyBox_bottom.num_elements);
+    glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
   }
 
   //call the shader function for all children
@@ -127,6 +159,10 @@ void ApplicationSolar::uploadView() {
   glUseProgram(m_shaders.at("orbit").handle);
   glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
     1, GL_FALSE, glm::value_ptr(view_matrix));
+
+  glUseProgram(m_shaders.at("square").handle);
+  glUniformMatrix4fv(m_shaders.at("square").u_locs.at("ViewMatrix"),
+    1, GL_FALSE, glm::value_ptr(view_matrix));
   
 }
 
@@ -146,6 +182,10 @@ void ApplicationSolar::uploadProjection() {
 
   glUseProgram(m_shaders.at("orbit").handle);
   glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ProjectionMatrix"),
+    1, GL_FALSE, glm::value_ptr(m_view_projection));
+
+  glUseProgram(m_shaders.at("square").handle);
+  glUniformMatrix4fv(m_shaders.at("square").u_locs.at("ProjectionMatrix"),
     1, GL_FALSE, glm::value_ptr(m_view_projection));
   glUseProgram(m_shaders.at("planet").handle);
 }
@@ -178,6 +218,10 @@ void ApplicationSolar::initializeShaderPrograms() {
 
   m_shaders.emplace("orbit", shader_program{ {{GL_VERTEX_SHADER,m_resource_path + "shaders/orbit.vert"},
                                            {GL_FRAGMENT_SHADER, m_resource_path + "shaders/orbit.frag"}} });
+
+  // shader for skysphere (previously used for skybox)
+  m_shaders.emplace("square", shader_program{ {{GL_VERTEX_SHADER,m_resource_path + "shaders/square.vert"},
+                                           {GL_FRAGMENT_SHADER, m_resource_path + "shaders/square.frag"}} });
   // request uniform locations for shader program
   m_shaders.at("planet").u_locs["NormalMatrix"] = -1;
   m_shaders.at("planet").u_locs["ModelMatrix"] = -1;
@@ -185,6 +229,7 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
   m_shaders.at("planet").u_locs["PlanetColor"] = -1;
   m_shaders.at("planet").u_locs["LightColor"] = -1;
+  m_shaders.at("planet").u_locs["Texture"] = -1;
   m_shaders.at("planet").u_locs["outline"] = -1;
   m_shaders.at("sun").u_locs["NormalMatrix"] = -1;
   m_shaders.at("sun").u_locs["ModelMatrix"] = -1;
@@ -196,24 +241,40 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.at("orbit").u_locs["ViewMatrix"] = -1;
   m_shaders.at("orbit").u_locs["ModelMatrix"] = -1;
   m_shaders.at("orbit").u_locs["ParentMatrix"] = -1;
+  m_shaders.at("square").u_locs["ModelMatrix"] = -1;
+  m_shaders.at("square").u_locs["ViewMatrix"] = -1;
+  m_shaders.at("square").u_locs["ProjectionMatrix"] = -1;
+  m_shaders.at("square").u_locs["Texture"] = -1;
+  
 }
 
 // load models
 
 void ApplicationSolar::initializeGeometry() {
-  model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
-  
+  model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL
+    | model::TEXCOORD);
+
   // added one model for stars and one for orbits
   star = { 1, 1, 1, GL_POINTS, 200 };
+
+  // no longer used model for skybox (using skysphere instead)
+  skyBox_top = { 6,6,6,GL_TRIANGLES, 6 };
+  skyBox_bottom = { 6,6,6,GL_TRIANGLES, 6 * 6 };
+  skyBox_front = { 6,6,6,GL_TRIANGLES, 6 };
+  skyBox_back = { 6,6,6,GL_TRIANGLES, 6 };
+  skyBox_left = { 6,6,6,GL_TRIANGLES, 6 };
+  skyBox_right = { 6,6,6,GL_TRIANGLES, 6 };
   // orbits have one vertex every five degrees
-  orbit = { 2, 2, 2, GL_LINE_STRIP, 360 / 5 + 1};
+  orbit = { 2, 2, 2, GL_LINE_STRIP, 360 / 5 + 1 };
+
+
   std::vector<float> stars = {};
   // Arrays for DrawArray function because i couldnt get DrawElements to work the way i wanted it to
-  float star_points[200*6];
+  float star_points[200 * 6];
   float orbit_angles[360 / 5 + 1];
   for (int i = 0; i < star.num_elements; ++i) {
     // generate random positions between 16 and 100 in positive and negative
-    stars.push_back(16 + std::rand() % (84 *  2) - 84);
+    stars.push_back(16 + std::rand() % (84 * 2) - 84);
     stars.push_back(16 + std::rand() % (84 * 2) - 84);
     stars.push_back(16 + std::rand() % (84 * 2) - 84);
     stars.push_back((std::rand() % 255) / 255.0f);
@@ -230,6 +291,58 @@ void ApplicationSolar::initializeGeometry() {
     orbit_angles[i] = angle;
     // Debugging std::cout << "angle: " << angle << "\n";
   }
+
+  // no longer used vertecies for box sides
+  std::vector<float> box_bottom_points{ 0.0,0.0,0.0, 0.0,0.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 , 1.0,0.0,1.0, 1.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0, 0.0,1.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
+  std::vector<float> box_top_points{ 0.0,1.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
+  std::vector<float> box_left_points{ 0.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 , 0.0,1.0,1.0, 1.0,1.0 ,0.0,1.0,0.0, 1.0,0.0 ,0.0,0.0,1.0, 0.0,1.0 };
+  std::vector<float> box_right_points{ 1.0,0.0,0.0, 0.0,0.0 ,1.0,1.0,0.0, 1.0,0.0 ,1.0,0.0,1.0, 0.0,1.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,1.0,0.0, 1.0,0.0 ,1.0,0.0,1.0, 0.0,1.0 };
+  std::vector<float> box_front_points{ 0.0,0.0,1.0, 0.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 , 1.0,1.0,1.0, 1.0,1.0 ,1.0,0.0,1.0, 1.0,0.0 ,0.0,1.0,1.0, 0.0,1.0 };
+  std::vector<float> box_back_points{ 0.0,0.0,0.0, 0.0,0.0 ,0.0,1.0,0.0, 0.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 , 1.0,1.0,0.0, 1.0,1.0 ,1.0,0.0,0.0, 1.0,0.0 ,0.0,1.0,0.0, 0.0,1.0 };
+
+  box_bottom_points.insert(box_bottom_points.end(), box_left_points.begin(), box_left_points.end());
+  box_bottom_points.insert(box_bottom_points.end(), box_right_points.begin(), box_right_points.end());
+  box_bottom_points.insert(box_bottom_points.end(), box_front_points.begin(), box_front_points.end());
+  box_bottom_points.insert(box_bottom_points.end(), box_back_points.begin(), box_back_points.end());
+  float box_bottom_points1[5 * 6 * 6];
+
+  std::copy(box_bottom_points.begin(), box_bottom_points.end(), box_bottom_points1);
+
+  // no longer used box object creation
+  glGenVertexArrays(1, &skyBox_bottom.vertex_AO);
+  glGenBuffers(1, &skyBox_bottom.vertex_BO);
+  glBindVertexArray(skyBox_bottom.vertex_AO);
+  glBindBuffer(GL_ARRAY_BUFFER, skyBox_bottom.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_bottom_points1), &box_bottom_points1, GL_STATIC_DRAW);
+  // first three elements of each Vertex are the position coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12);
+  glEnableVertexAttribArray(1);
+  // second two are texture coordinates
+
+  // skybox (skysphere) texture generation
+  GLuint bottomID;
+
+  glActiveTexture(GL_TEXTURE10);
+  glGenTextures(1, &bottomID);
+  glBindTexture(GL_TEXTURE_2D, bottomID);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  boxTexId.push_back(bottomID);
+
+  /* just some debugging
+  std::cout << "#########################################\n";
+  std::cout << "vBO: " << skyBox_bottom.vertex_BO << "\n";
+  std::cout << "vAO: " << skyBox_bottom.vertex_AO << "\n";
+  std::cout << "ID: " << boxTexId[0] << "\n";
+  std::cout << "#########################################\n";
+  */
+
+  pixel_data* Texture1 = new pixel_data{ texture_loader::file(m_resource_path + "textures/skybox.png") };
+  glTexImage2D(GL_TEXTURE_2D, 0, Texture1->channels, Texture1->width, Texture1->height, 0, Texture1->channels, Texture1->channel_type, &Texture1->pixels[0]);
+  
 
   // Classic open Gl object creating
   glGenVertexArrays(1, &star.vertex_AO);
@@ -253,8 +366,76 @@ void ApplicationSolar::initializeGeometry() {
   // only one data per vertex which is the angle
   glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
-  
 
+  
+  // setting important texture attributes in containers for later use
+  texnames.push_back("sun");
+  texnames.push_back("mercury");
+  texnames.push_back("venus");
+  texnames.push_back("super-earth");
+  texnames.push_back("mars");
+  texnames.push_back("jupiter");
+  texnames.push_back("saturn");
+  texnames.push_back("uranus");
+  texnames.push_back("neptun");
+  texnames.push_back("moon");
+
+  texname_texindex_map["sun"] = {0,GL_TEXTURE0} ;
+  texname_texindex_map["mercury"] = {1,GL_TEXTURE1};
+  texname_texindex_map["venus"] = {2,GL_TEXTURE2};
+  texname_texindex_map["super-earth"] = {3,GL_TEXTURE3};
+  texname_texindex_map["mars"] = {4,GL_TEXTURE4};
+  texname_texindex_map["jupiter"] = {5,GL_TEXTURE5};
+  texname_texindex_map["saturn"] = {6,GL_TEXTURE6};
+  texname_texindex_map["uranus"] = {7,GL_TEXTURE7};
+  texname_texindex_map["neptun"] = {8,GL_TEXTURE8};
+  texname_texindex_map["moon"] = { 9,GL_TEXTURE9 };
+
+  texpaths.push_back("textures/sunmap1.png");
+  texpaths.push_back("textures/mercurymap.png");
+  texpaths.push_back("textures/venusmap.png" );
+  texpaths.push_back("textures/earthmap1k.png");
+  texpaths.push_back("textures/mars_1k_color.png");
+  texpaths.push_back("textures/jupitermap.png");
+  texpaths.push_back("textures/saturnmap.png");
+  texpaths.push_back("textures/uranusmap.png");
+  texpaths.push_back("textures/neptunemap.png");
+  texpaths.push_back("textures/Moon.png");
+  // debugging std::cout << "vectorsize" << texnames.size();
+  
+  // texture generation for all planets
+  for (int i = 0; i < texnames.size(); ++i)
+  {
+    std::cout << "iteration: " << i << "\n";
+    GLuint TextureID;
+    std::cout << "ID: " << TextureID << "\n";
+    texids.push_back(TextureID);
+    std::cout << "tex id 0: " << texids[0] << "\n";
+    std::cout << "tex id befor " << i << " : " << texids[i] << "\n";
+    //texname_texi_texpath_map[texnames[i]] = { {i},TextureID };
+    glActiveTexture(texname_texindex_map[texnames[i]].second);
+    glGenTextures(1, &texids[i]);
+    std::cout << "tex id after " << i << " : " << texids[i] << "\n";
+    glBindTexture(GL_TEXTURE_2D, texids[i]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    pixel_data* Texture = new pixel_data{ texture_loader::file(m_resource_path + texpaths[i])};
+
+    /* just some debugging
+    std::cout << "data lenght" << Texture->pixels.size() << "\n";
+    std::cout << "data heigth" << Texture->height << "\n";
+    std::cout << "data width" << Texture->width << "\n";
+    std::cout << "path: " << texpaths[i] << "\n";
+    std::cout << "id: " << texids[i] << "\n";
+    std::cout << "text i: " << texname_texindex_map[texnames[i]].second << "\n";
+    */
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Texture->width, Texture->height, 0, GL_RGBA, Texture->channel_type, &Texture->pixels[0]);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texids[i]);
+  }
+ 
   // generate vertex array object
   glGenVertexArrays(1, &planet_object.vertex_AO);
   // bind the array for attaching buffers
@@ -272,7 +453,10 @@ void ApplicationSolar::initializeGeometry() {
   // activate second attribute on gpu
   glEnableVertexAttribArray(1);
   // second attribute is 3 floats with no offset & stride
+  std::cout << "Position Offset: " << planet_model.offsets[model::POSITION] << "\n" << "Normal Offset: " << planet_model.offsets[model::NORMAL] << "\n" << "TEX Offset: " << planet_model.offsets[model::TEXCOORD] << "\n" << "Stride: " << planet_model.vertex_bytes << "\n" << "Tex size: " << model::TEXCOORD.components << "\n";
   glVertexAttribPointer(1, model::NORMAL.components, model::NORMAL.type, GL_FALSE, planet_model.vertex_bytes, planet_model.offsets[model::NORMAL]);
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, model::TEXCOORD.components, model::TEXCOORD.type, GL_FALSE, planet_model.vertex_bytes, planet_model.offsets[model::TEXCOORD]);
 
    // generate generic buffer
   glGenBuffers(1, &planet_object.element_BO);
